@@ -1,0 +1,127 @@
+buildscript {
+    repositories {
+        maven { url 'http://repo.spring.io/plugins-release' }
+    }
+    dependencies {
+        classpath 'io.spring.gradle:dependency-management-plugin:1.0.2.RELEASE'
+        classpath 'io.spring.gradle:spring-io-plugin:0.0.8.RELEASE'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'idea'
+    id 'jacoco'
+    id 'org.sonarqube' version '2.5'
+    id 'checkstyle'
+}
+description = 'Spring Integration AWS Support'
+
+apply from: "${rootProject.projectDir}/publish-maven.gradle"
+
+group = 'org.springframework.integration'
+
+repositories {
+//	maven { url 'http://repo.spring.io/libs-staging-local' }
+    if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
+        maven { url 'https://repo.spring.io/libs-snapshot' }
+    }
+    maven { url 'http://repo.spring.io/libs-milestone' }
+}
+
+ext {
+    assertjVersion = '3.6.2'
+    servletApiVersion = '3.1.0'
+    slf4jVersion = '1.7.25'
+    springCloudAwsVersion = '1.2.1.RELEASE'
+    springIntegrationVersion = '4.3.11.RELEASE'
+
+    idPrefix = 'aws'
+
+    linkHomepage = 'https://github.com/spring-projects/spring-integration-aws'
+    linkCi = 'https://build.spring.io/browse/INTEXT'
+    linkIssue = 'https://jira.spring.io/browse/INTEXT'
+    linkScmUrl = 'https://github.com/spring-projects/spring-integration-aws'
+    linkScmConnection = 'https://github.com/spring-projects/spring-integration-aws.git'
+    linkScmDevConnection = 'git@github.com:spring-projects/spring-integration-aws.git'
+}
+
+ext.javadocLinks = [
+        "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/"
+] as String[]
+
+compileJava {
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+}
+
+compileTestJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
+sourceSets {
+    test {
+        resources {
+            srcDirs = ['src/test/resources', 'src/test/java']
+        }
+    }
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+if (project.hasProperty('platformVersion')) {
+    apply plugin: 'spring-io'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-aws-dependencies:$springCloudAwsVersion"
+        mavenBom "org.springframework.integration:spring-integration-bom:$springIntegrationVersion"
+    }
+
+    if (project.hasProperty('platformVersion')) {
+        springIoTestRuntime {
+            imports {
+                mavenBom "io.spring.platform:platform-bom:$platformVersion"
+            }
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.7.9"
+}
+
+checkstyle {
+    configFile = file("${rootDir}/src/checkstyle/checkstyle.xml")
+    toolVersion = "8.1"
+}
+
+dependencies {
+    compile "org.springframework.integration:spring-integration-core"
+    compile "org.springframework.cloud:spring-cloud-aws-core"
+    compile "org.springframework.cloud:spring-cloud-aws-dependencies:1.2.1.RELEASE"
+    compile "org.springframework.cloud:spring-cloud-aws-messaging"
+
+
+
+    compile('org.springframework.cloud:spring-cloud-aws-messaging', optional)
+    compile('org.springframework.integration:spring-integration-file', optional)
+    compile('org.springframework.integration:spring-integration-http', optional)
+
+    compile('com.amazonaws:aws-java-sdk-kinesis', optional)
+    compile('com.amazonaws:aws-java-sdk-dynamodb', optional)
+
+    compile("javax.servlet:javax.servlet-api:$servletApiVersion", provided)
+
+    testCompile 'org.springframework.integration:spring-integration-test'
+    testCompile "org.assertj:assertj-core:$assertjVersion"
+
+    testRuntime "org.slf4j:slf4j-log4j12:$slf4jVersion"
+}
+
+eclipse.project.natures += 'org.springframework.ide.eclipse.core.springnature'
+
+
